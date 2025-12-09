@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Ramp Cards Panel</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      margin: 0;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ffffff;
+      font-size: 34px;
+      font-weight: 700;
+      margin-bottom: 25px;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .section-card {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+      margin: 20px auto;
+      transition: 0.25s;
+      border: 1px solid #ccc;
+      padding: 20px;
+      width: 400px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+    }
+
+    .section-card:hover {
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12);
+      transform: translateY(-3px);
+    }
+
+    .section-card label {
+      display: block;
+      text-align: left;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+
+    .input-field {
+      width: 100%;
+      max-width: 550px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1.5px solid #cdd4e0;
+      margin: 8px 0 20px 0;
+      font-size: 15px;
+      background: #f7f9fc;
+      transition: 0.25s;
+      display: block;
+      box-sizing: border-box;
+    }
+
+    .input-field:focus {
+      border-color: #457b9d;
+      background: #ffffff;
+      box-shadow: 0 0 6px rgba(69, 123, 157, 0.3);
+      outline: none;
+    }
+
+    label {
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    button {
+      background: linear-gradient(135deg, #1d3557, #457b9d);
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.25s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-2px);
+    }
+
+    .example-block {
+      width: 100%;
+      max-width: 550px;
+      background: #f1f5f9;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #d6dde6;
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre-line;
+      margin-bottom: 20px;
+    }
+
+    .cards-container {
+      display: flex;
+      gap: 100px;
+      /* space between cards */
+      justify-content: center;
+      flex-wrap: wrap;
+      /* stack on small screens */
+    }
+
+    .card-wrapper {
+      text-align: center;
+      /* center the heading */
+    }
+
+    .card-wrapper h2 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Ramp Cards Panel</h1>
+  <hr>
+  <div class="cards-container">
+    <div class="card-wrapper">
+      <h2 style="color: white;">Create Card</h2>
+      <div class="section-card">
+        <form action="/create-list" method="post">
+          <label for="amount_usd_create">Amount (USD per card)</label>
+          <input type="text" id="amount_usd_create" name="amount_usd" value="60" required class="input-field">
+          <label for="display_names">Display Names (one per line)</label>
+          <textarea id="display_names" name="display_names" rows="8" class="input-field"></textarea>
+          <button type="submit">Create Card</button>
+        </form>
+      </div>
+    </div>
+
+    <div style="border-left: 1px solid white; height: 500px;"></div>
+
+
+    <div class="card-wrapper">
+      <h2 style="color: white;">Update Card</h2>
+
+      <div class="section-card">
+        <form action="/update-manual" method="post">
+          <label for="amount_usd_update">Amount (USD per card)</label>
+          <input type="text" id="amount_usd_update" name="amount_usd" value="20" required class="input-field">
+
+          <label for="lines">Display Names (one per line)</label>
+          <textarea id="lines" name="lines" rows="8" class="input-field"></textarea>
+
+          <button type="submit">Update Limit</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

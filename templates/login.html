@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <title>Login</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+    }
+
+    .card {
+      width: 360px;
+      padding: 35px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+      animation: fadeIn 0.7s ease;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-weight: 600;
+      font-size: 26px;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    label {
+      font-weight: 600;
+      color: #f0f0f0;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      margin-bottom: 18px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      background: rgba(255, 255, 255, 0.85);
+      transition: 0.25s;
+    }
+
+    input:focus {
+      outline: none;
+      background: #fff;
+      box-shadow: 0 0 8px rgba(255,255,255,0.55);
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #ffffff;
+      color: #1e3c72;
+      border: none;
+      font-weight: 700;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #f1f1f1;
+      transform: translateY(-2px);
+    }
+
+    .error {
+      color: #ffdddd;
+      text-align: center;
+      margin-bottom: 12px;
+      font-size: 14px;
+      background: rgba(255, 0, 0, 0.15);
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 100, 100, 0.4);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="card">
+    <h2>Login</h2>
+
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+      <label>Email</label>
+      <input type="email" name="email" placeholder="Enter your email" required>
+
+      <label>Password</label>
+      <input type="password" name="password" placeholder="Enter your password" required>
+
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+</body>
+</html>
