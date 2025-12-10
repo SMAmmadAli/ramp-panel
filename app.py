@@ -32,8 +32,10 @@ TOTP_SECRET = os.getenv(
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
 
-LOGIN_EMAIL = "hello@digitechio.com"
-LOGIN_PASSWORD = "abarakarabadra09003493$"
+
+LOGIN_EMAIL = os.getenv("LOGIN_EMAIL")
+LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
+
 
 def check_credentials(req):
     email = (req.form.get("email") or "").strip()
