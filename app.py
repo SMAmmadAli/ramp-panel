@@ -205,6 +205,23 @@ def login():
     return render_template("login.html")
 
 
+# @app.route("/verify-2fa", methods=["POST"])
+# def verify_2fa():
+#     user_code = (request.form.get("code") or "").strip()
+
+#     if not TOTP_SECRET:
+#         session.clear()
+#         return render_template("login.html", error="TOTP secret not configured.")
+
+#     totp = pyotp.TOTP(TOTP_SECRET)
+
+#     if not totp.verify(user_code):
+#         return render_template("2fa.html", error="Invalid or expired code. Try again.")
+
+#     session["authenticated"] = True
+#     session.pop("totp_stage", None)
+
+#     return render_template("index.html")
 @app.route("/verify-2fa", methods=["POST"])
 def verify_2fa():
     user_code = (request.form.get("code") or "").strip()
@@ -221,7 +238,8 @@ def verify_2fa():
     session["authenticated"] = True
     session.pop("totp_stage", None)
 
-    return render_template("index.html")
+    return "2FA OK - Logged in"
+
 
 
 @app.route("/logout")
