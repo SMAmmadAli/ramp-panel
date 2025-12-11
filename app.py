@@ -1,16 +1,13 @@
 import os
-import csv
 import json
 import base64
-import tempfile
-import random
 import time
-
 import requests
 import pyotp
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 from functools import wraps
+from datetime import timedelta
 
 load_dotenv()
 
@@ -26,13 +23,12 @@ ENTITY_ID     = os.getenv("ENTITY_ID")
 
 TOTP_SECRET = os.getenv("TOTP_SECRET")
 
+LOGIN_EMAIL = os.getenv("LOGIN_EMAIL")
+LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
-
-
-LOGIN_EMAIL = os.getenv("LOGIN_EMAIL")
-LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
+app.permanent_session_lifetime = timedelta(minutes=1)
 
 
 def check_credentials(req):
@@ -51,6 +47,22 @@ def login_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapper
+
+
+@app.before_request
+def check_session_timeout():
+    if session.get("authenticated"):
+        now = time.time()
+        last_active = session.get("last_active", now)
+
+        # 30 minutes = 1800 seconds
+        if now - last_active > 30 * 60:
+            session.clear()
+            return redirect(url_for("login"))
+
+        # Update last activity timestamp on each request
+        session["last_active"] = now
+
 
 class RampClient:
     def __init__(self):
@@ -183,6 +195,7 @@ class RampClient:
         body = r.json()
         return body.get("data", [])
 
+
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "GET" and session.get("authenticated"):
@@ -196,11 +209,12 @@ def login():
         if not TOTP_SECRET:
             return render_template("login.html", error="TOTP secret not configured.")
 
+        # Password OK; go to 2FA step
         session["totp_stage"] = "pending"
-
         return render_template("2fa.html")
 
     return render_template("login.html")
+
 
 @app.route("/verify-2fa", methods=["POST"])
 def verify_2fa():
@@ -216,9 +230,12 @@ def verify_2fa():
         return render_template("2fa.html", error="Invalid or expired code. Try again.")
 
     session["authenticated"] = True
+    session["last_active"] = time.time()
+    session.permanent = True
     session.pop("totp_stage", None)
 
     return render_template("index.html")
+
 
 @app.route("/logout")
 def logout():
@@ -317,6 +334,7 @@ def update_manual():
         return render_template("results.html", mode="update_manual", results=results)
     except Exception as e:
         return f"Error (update manual): {e}"
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
