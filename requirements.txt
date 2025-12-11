@@ -2,3 +2,4 @@ Flask
 python-dotenv
 requests
 gunicorn
+pyotp
