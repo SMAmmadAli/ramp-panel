@@ -24,10 +24,6 @@ SCOPES        = os.getenv(
 OWNER_USER_ID = os.getenv("OWNER_USER_ID")
 ENTITY_ID     = os.getenv("ENTITY_ID")
 
-# TOTP_SECRET = os.getenv(
-#     "TOTP_SECRET",
-#     "QEXXNIDXLBZPJDA5LZZ54QVGRC77OJ5V"  
-# )
 TOTP_SECRET = os.getenv("TOTP_SECRET")
 
 
@@ -206,73 +202,23 @@ def login():
 
     return render_template("login.html")
 
-
-# @app.route("/verify-2fa", methods=["POST"])
-# def verify_2fa():
-#     user_code = (request.form.get("code") or "").strip()
-
-#     if not TOTP_SECRET:
-#         session.clear()
-#         return render_template("login.html", error="TOTP secret not configured.")
-
-#     totp = pyotp.TOTP(TOTP_SECRET)
-
-#     if not totp.verify(user_code):
-#         return render_template("2fa.html", error="Invalid or expired code. Try again.")
-
-#     session["authenticated"] = True
-#     session.pop("totp_stage", None)
-
-#     return render_template("index.html")
-
-import traceback
-
 @app.route("/verify-2fa", methods=["POST"])
 def verify_2fa():
-    try:
-        user_code = (request.form.get("code") or "").strip()
-        print("DEBUG /verify-2fa user_code length:", len(user_code))
+    user_code = (request.form.get("code") or "").strip()
 
-        if not TOTP_SECRET:
-            print("DEBUG /verify-2fa: TOTP_SECRET is empty or missing")
-            session.clear()
-            return render_template("login.html", error="TOTP secret not configured.")
+    if not TOTP_SECRET:
+        session.clear()
+        return render_template("login.html", error="TOTP secret not configured.")
 
-        # Don't print full secret, just its length
-        print("DEBUG /verify-2fa TOTP_SECRET length:", len(TOTP_SECRET))
+    totp = pyotp.TOTP(TOTP_SECRET)
 
-        # Try creating TOTP object
-        try:
-            totp = pyotp.TOTP(TOTP_SECRET)
-        except Exception as e:
-            print("ERROR creating TOTP object:", e)
-            traceback.print_exc()
-            return f"Error creating TOTP object: {e}", 500
+    if not totp.verify(user_code):
+        return render_template("2fa.html", error="Invalid or expired code. Try again.")
 
-        # Try verifying
-        try:
-            is_valid = totp.verify(user_code)
-        except Exception as e:
-            print("ERROR verifying TOTP:", e)
-            traceback.print_exc()
-            return f"Error verifying TOTP code: {e}", 500
+    session["authenticated"] = True
+    session.pop("totp_stage", None)
 
-        print("DEBUG /verify-2fa is_valid:", is_valid)
-
-        if not is_valid:
-            return render_template("2fa.html", error="Invalid or expired code. Try again.")
-
-        session["authenticated"] = True
-        session.pop("totp_stage", None)
-
-        return "2FA OK - Logged in (DEBUG)"
-
-    except Exception as e:
-        print("ERROR in /verify-2fa outer handler:", e)
-        traceback.print_exc()
-        return f"Error in /verify-2fa: {e}", 500
-
-
+    return render_template("index.html")
 
 @app.route("/logout")
 def logout():
