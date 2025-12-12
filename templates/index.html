@@ -24,21 +24,9 @@
 
     .logout-btn {
       background: #e63946;
-      color: #ffffff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: 0.2s ease;
+      border: none !important;
     }
 
-    .logout-btn:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
 
     h1 {
       text-align: center;
@@ -165,83 +153,36 @@
   align-items: center;
 }
 
-.activity-link {
-  color: white;
-  font-weight: 600;
-  text-decoration: none;
-  font-size: 16px;
-}
+.top-btn {
+      background: rgba(255, 255, 255, 0.18);
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      text-decoration: none;
+      font-weight: 600;
+      transition: .25s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
 
-
+    .top-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
 
   </style>
 </head>
-
-<!-- <body>
-  <a href="{{ url_for('activity') }}" class="btn btn-secondary">
-  View Activity
-</a>
-
-  <div class="top-bar">
-    <span style="color:white; margin-right:15px; font-weight:600;">
-      Logged in
-    </span>
-    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-  </div>
-
-  <h1>Ramp Cards Panel</h1>
-  <hr>
-
-  <div class="cards-container">
-    <div class="card-wrapper">
-      <h2 style="color: white;">Create Card</h2>
-      <div class="section-card">
-        <form action="/create-list" method="post">
-          <label for="amount_usd_create">Amount (USD per card)</label>
-          <input type="text" id="amount_usd_create" name="amount_usd" value="60" required class="input-field">
-
-          <label for="display_names">Display Names (one per line)</label>
-          <textarea id="display_names" name="display_names" rows="8" class="input-field"></textarea>
-
-          <button type="submit">Create Card</button>
-        </form>
-      </div>
-    </div>
-
-    <div style="border-left: 1px solid white; height: 500px;"></div>
-
-    <div class="card-wrapper">
-      <h2 style="color: white;">Update Card</h2>
-      <div class="section-card">
-        <form action="/update-manual" method="post">
-          <label for="amount_usd_update">Amount (USD per card)</label>
-          <input type="text" id="amount_usd_update" name="amount_usd" value="20" required class="input-field">
-
-          <label for="lines">Display Names (one per line)</label>
-          <textarea id="lines" name="lines" rows="8" class="input-field"></textarea>
-
-          <button type="submit">Update Limit</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const THIRTY_MINUTES = 30 * 60 * 1000;
-    setTimeout(function () {
-      window.location.href = "{{ url_for('logout') }}";
-    }, THIRTY_MINUTES);
-  </script>
-</body> -->
-
 <body>
   <div class="top-row">
   <div class="logged-box">
     <span class="logged-in-text">Logged in</span>
   </div>
   <div class="right-buttons">
-    <a href="{{ url_for('activity') }}" class="activity-link">📄 View Activity</a>
-    <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+    <a href="{{ url_for('activity') }}" class="top-btn">📄 View Activity</a>
+    <a href="{{ url_for('logout') }}" class="top-btn logout-btn">Logout</a>
   </div>
 
 </div>
