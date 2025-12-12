@@ -1,5 +1,6 @@
 Flask
 python-dotenv
 requests
-gunicorn
 pyotp
+firebase-admin
+google-cloud-firestore

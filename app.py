@@ -4,10 +4,12 @@ import base64
 import time
 import requests
 import pyotp
+import firebase_admin
+from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 from functools import wraps
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 load_dotenv()
 
@@ -26,9 +28,29 @@ TOTP_SECRET = os.getenv("TOTP_SECRET")
 LOGIN_EMAIL = os.getenv("LOGIN_EMAIL")
 LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD")
 
+FIREBASE_KEY_PATH = os.path.join(os.path.dirname(__file__), "ramp_panel_firebase_key.json")
+
+FIREBASE_SERVICE_ACCOUNT_B64 = os.getenv("FIREBASE_SERVICE_ACCOUNT_B64")
+FIREBASE_SERVICE_ACCOUNT     = os.getenv("FIREBASE_SERVICE_ACCOUNT")
+
+if not firebase_admin._apps:
+    if FIREBASE_SERVICE_ACCOUNT_B64:
+        decoded = base64.b64decode(FIREBASE_SERVICE_ACCOUNT_B64).decode("utf-8")
+        service_account_info = json.loads(decoded)
+        cred = credentials.Certificate(service_account_info)
+    elif FIREBASE_SERVICE_ACCOUNT:
+        service_account_info = json.loads(FIREBASE_SERVICE_ACCOUNT)
+        cred = credentials.Certificate(service_account_info)
+    else:
+        cred = credentials.Certificate(FIREBASE_KEY_PATH)
+
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-key")
-app.permanent_session_lifetime = timedelta(minutes=1)
+app.permanent_session_lifetime = timedelta(minutes=30)
 
 
 def check_credentials(req):
@@ -54,13 +76,9 @@ def check_session_timeout():
     if session.get("authenticated"):
         now = time.time()
         last_active = session.get("last_active", now)
-
-        # 30 minutes = 1800 seconds
         if now - last_active > 30 * 60:
             session.clear()
             return redirect(url_for("login"))
-
-        # Update last activity timestamp on each request
         session["last_active"] = now
 
 
@@ -147,15 +165,6 @@ class RampClient:
         print("Response:", r.text)
         return r
 
-    def terminate_limit(self, limit_id: str):
-        url = f"{API_BASE}/developer/v1/limits/{limit_id}/terminate"
-        print(f"\n[DELETE] Terminating limit {limit_id}")
-        print("POST", url)
-        r = requests.post(url, headers=self.headers, json={})
-        print("Status:", r.status_code)
-        print("Response:", r.text)
-        return r
-
     def resolve_limit_from_task(self, task_id: str) -> str:
         status_url = f"{API_BASE}/developer/v1/limits/deferred/status/{task_id}"
         print(f"\nResolving deferred task: {task_id}")
@@ -209,7 +218,6 @@ def login():
         if not TOTP_SECRET:
             return render_template("login.html", error="TOTP secret not configured.")
 
-        # Password OK; go to 2FA step
         session["totp_stage"] = "pending"
         return render_template("2fa.html")
 
@@ -269,8 +277,21 @@ def create_list():
             display_name = raw_line.strip()
             if not display_name:
                 continue
+
             resp = ramp.create_card(display_name, amount_usd, OWNER_USER_ID)
             success = resp.status_code in (200, 201, 202)
+
+            activity_doc = {
+                "action": "create_card",
+                "display_name": display_name,
+                "amount_usd": amount_usd,
+                "user_id": OWNER_USER_ID,
+                "status_code": resp.status_code,
+                "success": success,
+                "response_body": resp.text,
+                "timestamp": firestore.SERVER_TIMESTAMP,
+            }
+            db.collection("card_activity").add(activity_doc)
 
             results.append({
                 "display_name": display_name,
@@ -321,19 +342,125 @@ def update_manual():
                     "success": False,
                     "response": f"No limit_id found for {display_name} in Ramp"
                 })
+                db.collection("card_activity").add({
+                    "action": "update_limit_not_found",
+                    "display_name": display_name,
+                    "amount_usd": new_amount,
+                    "limit_id": None,
+                    "status_code": None,
+                    "success": False,
+                    "response_body": "No limit_id found for this display_name in Ramp",
+                    "timestamp": firestore.SERVER_TIMESTAMP,
+                })
                 continue
 
             resp = ramp.patch_limit_amount(stored_id, new_amount)
+            success = resp.status_code in (200, 201, 202)
+
+            activity_doc = {
+                "action": "update_limit",
+                "display_name": display_name,
+                "amount_usd": new_amount,
+                "limit_id": stored_id,
+                "status_code": resp.status_code,
+                "success": success,
+                "response_body": resp.text,
+                "timestamp": firestore.SERVER_TIMESTAMP,
+            }
+            db.collection("card_activity").add(activity_doc)
+
             results.append({
                 "display_name": display_name,
                 "status": resp.status_code,
-                "success": resp.status_code in (200, 201, 202),
+                "success": success,
                 "response": resp.text
             })
 
         return render_template("results.html", mode="update_manual", results=results)
     except Exception as e:
         return f"Error (update manual): {e}"
+
+@app.route("/activity")
+@login_required
+def activity():
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")    
+    search = (request.args.get("search") or "").strip().lower()
+
+    docs = db.collection("card_activity").stream()
+
+    activities = []
+
+    for doc in docs:
+        data = doc.to_dict() or {}
+        data["id"] = doc.id
+
+        ts = data.get("timestamp")
+        dt_obj = None
+
+        if ts is not None:
+            if hasattr(ts, "to_datetime"):
+                dt_obj = ts.to_datetime()
+            elif isinstance(ts, str):
+                try:
+                    dt_obj = datetime.fromisoformat(ts)
+                except ValueError:
+                    dt_obj = None
+        data["dt_obj"] = dt_obj
+        data["timestamp_str"] = dt_obj.strftime("%Y-%m-%d %H:%M:%S") if dt_obj else ""
+
+        activities.append(data)
+
+    def in_date_range(item):
+        dt_obj = item.get("dt_obj")
+        if not dt_obj:
+            return True 
+
+        if start_date_str:
+            try:
+                start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
+                if dt_obj < start_dt:
+                    return False
+            except ValueError:
+                pass
+
+        if end_date_str:
+            try:
+                end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
+                end_dt_plus = end_dt + timedelta(days=1)
+                if dt_obj >= end_dt_plus:
+                    return False
+            except ValueError:
+                pass
+
+        return True
+
+    activities = [a for a in activities if in_date_range(a)]
+    if search:
+        filtered = []
+        for a in activities:
+            combined = " ".join([
+                str(a.get("action", "")),
+                str(a.get("display_name", "")),
+                str(a.get("limit_id", "")),
+                str(a.get("user_id", "")),
+                str(a.get("status_code", "")),
+            ]).lower()
+            if search in combined:
+                filtered.append(a)
+        activities = filtered
+    activities.sort(
+        key=lambda x: x .get("dt_obj") or datetime.min,
+        reverse=True
+    )
+
+    return render_template(
+        "activity.html",
+        activities=activities,
+        start_date=start_date_str or "",
+        end_date=end_date_str or "",
+        search=search or "",
+    )
 
 
 if __name__ == "__main__":
