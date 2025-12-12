@@ -1,0 +1,4 @@
+.env
+ramp_panel_firebase_key.json
+__pycache__/
+.venv/
