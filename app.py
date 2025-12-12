@@ -9,7 +9,7 @@ from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, session
 from functools import wraps
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 
 load_dotenv()
 
@@ -304,7 +304,6 @@ def create_list():
     except Exception as e:
         return f"Error (create list): {e}"
 
-
 @app.route("/update-manual", methods=["POST"])
 @login_required
 def update_manual():
@@ -386,36 +385,32 @@ def activity():
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")    
     search = (request.args.get("search") or "").strip().lower()
-
     docs = db.collection("card_activity").stream()
-
     activities = []
-
     for doc in docs:
         data = doc.to_dict() or {}
         data["id"] = doc.id
-
         ts = data.get("timestamp")
         dt_obj = None
-
         if ts is not None:
-            if hasattr(ts, "to_datetime"):
+            if isinstance(ts, datetime):
+                dt_obj = ts
+            elif hasattr(ts, "to_datetime"):
                 dt_obj = ts.to_datetime()
             elif isinstance(ts, str):
                 try:
                     dt_obj = datetime.fromisoformat(ts)
                 except ValueError:
                     dt_obj = None
+        if isinstance(dt_obj, datetime) and dt_obj.tzinfo is not None:
+            dt_obj = dt_obj.astimezone(timezone.utc).replace(tzinfo=None)
         data["dt_obj"] = dt_obj
         data["timestamp_str"] = dt_obj.strftime("%Y-%m-%d %H:%M:%S") if dt_obj else ""
-
         activities.append(data)
-
     def in_date_range(item):
         dt_obj = item.get("dt_obj")
         if not dt_obj:
-            return True 
-
+            return True
         if start_date_str:
             try:
                 start_dt = datetime.strptime(start_date_str, "%Y-%m-%d")
@@ -423,7 +418,6 @@ def activity():
                     return False
             except ValueError:
                 pass
-
         if end_date_str:
             try:
                 end_dt = datetime.strptime(end_date_str, "%Y-%m-%d")
@@ -432,9 +426,7 @@ def activity():
                     return False
             except ValueError:
                 pass
-
         return True
-
     activities = [a for a in activities if in_date_range(a)]
     if search:
         filtered = []
@@ -450,10 +442,9 @@ def activity():
                 filtered.append(a)
         activities = filtered
     activities.sort(
-        key=lambda x: x .get("dt_obj") or datetime.min,
+        key=lambda x: x.get("dt_obj") or datetime.min,
         reverse=True
     )
-
     return render_template(
         "activity.html",
         activities=activities,
@@ -461,7 +452,6 @@ def activity():
         end_date=end_date_str or "",
         search=search or "",
     )
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
